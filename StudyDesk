@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>StudyDesk</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&display=swap" rel="stylesheet"/>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:      #0d0f14;
+  --surface: #13161e;
+  --card:    #191d28;
+  --border:  #252a38;
+  --text:    #e8eaf2;
+  --muted:   #6b7394;
+  --accent:  #6c63ff;
+  --green:   #22d3a0;
+  --yellow:  #fbbf24;
+  --orange:  #f97316;
+  --red:     #ef4444;
+}
+
+body {
+  font-family: 'Space Grotesk', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  max-width: 860px;
+  margin: auto;
+}
+
+/* ── TOAST ── */
+#toasts {
+  position: fixed; top: 1rem; right: 1rem;
+  z-index: 999; display: flex; flex-direction: column; gap: .5rem;
+}
+.toast {
+  background: var(--card); border: 1px solid var(--border);
+  border-left: 4px solid var(--accent); border-radius: 10px;
+  padding: .8rem 1rem; display: flex; gap: .7rem;
+  align-items: flex-start; min-width: 260px; max-width: 320px;
+  box-shadow: 0 8px 24px #0004;
+  animation: tIn .35s cubic-bezier(.16,1,.3,1) both;
+}
+.toast.urgent { border-left-color: var(--red); }
+.toast.warn   { border-left-color: var(--orange); }
+.toast.ok     { border-left-color: var(--green); }
+.toast.out    { animation: tOut .25s ease forwards; }
+.toast-title  { font-size: .78rem; font-weight: 700; }
+.toast-msg    { font-size: .7rem; color: var(--muted); margin-top: .15rem; }
+.toast-body   { flex: 1; }
+.toast-x {
+  background: none; border: none; color: var(--muted);
+  cursor: pointer; font-size: .85rem;
+}
+.toast-x:hover { color: var(--text); }
+@keyframes tIn  { from { opacity:0; transform:translateX(20px); } }
+@keyframes tOut { to   { opacity:0; transform:translateX(20px); } }
+
+/* ── HEADER ── */
+header {
+  background: var(--surface); border-bottom: 1px solid var(--border);
+  padding: .9rem 1.5rem; display: flex; align-items: center;
+  justify-content: space-between; position: sticky; top: 0; z-index: 100;
+}
+.logo { font-size: 1.3rem; font-weight: 700; }
+.logo span { color: var(--accent); }
+.notif-btn {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 8px; color: var(--muted); padding: .4rem .65rem;
+  cursor: pointer; font-size: .95rem; position: relative; transition: .2s;
+}
+.notif-btn:hover { border-color: var(--accent); color: var(--text); }
+.notif-dot {
+  position: absolute; top: 4px; right: 4px;
+  width: 7px; height: 7px; background: var(--red);
+  border-radius: 50%; border: 2px solid var(--surface); display: none;
+}
+.notif-dot.on { display: block; }
+.hdr-date { font-size: .65rem; color: var(--muted); letter-spacing: .08em; }
+
+/* ── PAGES ── */
+.page { display: none; padding: 1.5rem; padding-bottom: 80px; flex: 1; }
+.page.active { display: block; animation: pIn .3s ease; }
+@keyframes pIn { from { opacity:0; transform:translateY(10px); } }
+
+.page-eyebrow { font-size: .6rem; letter-spacing: .2em; text-transform: uppercase; color: var(--accent); margin-bottom: .25rem; }
+.page-title   { font-size: 1.7rem; font-weight: 700; letter-spacing: -.02em; }
+.page-sub     { font-size: .75rem; color: var(--muted); margin-top: .3rem; margin-bottom: 1.5rem; }
+
+/* ── FORM ── */
+.form-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 14px; padding: 1.5rem;
+  display: flex; flex-direction: column; gap: 1rem;
+}
+.row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.full { grid-column: 1/-1; }
+.fg { display: flex; flex-direction: column; gap: .35rem; }
+label { font-size: .62rem; text-transform: uppercase; letter-spacing: .15em; color: var(--muted); font-weight: 600; }
+
+input, select, textarea {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; color: var(--text);
+  font-family: inherit; font-size: .87rem;
+  padding: .6rem .85rem; outline: none; width: 100%;
+  transition: border-color .2s, box-shadow .2s;
+}
+input:focus, select:focus, textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(108,99,255,.12);
+}
+input::placeholder, textarea::placeholder { color: var(--muted); }
+select option { background: var(--card); }
+textarea { resize: vertical; min-height: 65px; }
+
+/* Difficulty */
+.diff-row { display: flex; gap: .5rem; }
+.diff-btn {
+  flex: 1; border: 2px solid var(--border); background: var(--surface);
+  border-radius: 8px; color: var(--muted); font-family: inherit;
+  font-size: .7rem; font-weight: 600; padding: .65rem .3rem;
+  cursor: pointer; text-align: center; transition: .2s; line-height: 1.4;
+}
+.diff-btn:hover { border-color: #3a3f55; color: var(--text); }
+.diff-btn .di { font-size: 1rem; display: block; margin-bottom: .15rem; }
+.diff-btn.active.easy   { border-color:var(--green);  background:rgba(34,211,160,.08);  color:var(--green); }
+.diff-btn.active.medium { border-color:var(--yellow); background:rgba(251,191,36,.08);  color:var(--yellow); }
+.diff-btn.active.hard   { border-color:var(--orange); background:rgba(249,115,22,.08);  color:var(--orange); }
+.diff-btn.active.urgent { border-color:var(--red);    background:rgba(239,68,68,.08);   color:var(--red); }
+
+.btn-primary {
+  background: var(--accent); color: #fff; font-family: inherit;
+  font-size: .85rem; font-weight: 700; letter-spacing: .06em;
+  border: none; border-radius: 10px; padding: .8rem 1.8rem;
+  cursor: pointer; transition: .2s; align-self: flex-start;
+}
+.btn-primary:hover { background: #7c74ff; box-shadow: 0 4px 18px rgba(108,99,255,.35); }
+.btn-primary:active { transform: scale(.97); }
+
+/* Recent header */
+.sec-hdr {
+  display: flex; justify-content: space-between; align-items: center;
+  margin: 1.8rem 0 .9rem;
+}
+.sec-hdr h3 { font-size: 1rem; font-weight: 700; }
+.badge {
+  background: var(--accent); color: #fff;
+  font-size: .62rem; font-weight: 700;
+  border-radius: 20px; padding: .12rem .5rem;
+}
+
+/* ── STATS ── */
+.stats {
+  display: grid; grid-template-columns: repeat(4,1fr);
+  gap: .7rem; margin-bottom: 1.5rem;
+}
+.stat {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 12px; padding: .9rem; text-align: center;
+}
+.stat-n { font-size: 1.8rem; font-weight: 700; line-height: 1; }
+.stat-l { font-size: .58rem; text-transform: uppercase; letter-spacing: .15em; color: var(--muted); margin-top: .25rem; }
+.s-total .stat-n { color: var(--accent); }
+.s-done  .stat-n { color: var(--green); }
+.s-pend  .stat-n { color: var(--yellow); }
+.s-over  .stat-n { color: var(--red); }
+
+/* ── FILTERS ── */
+.filters { display: flex; gap: .45rem; flex-wrap: wrap; margin-bottom: 1rem; }
+.f-btn {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 20px; color: var(--muted); font-family: inherit;
+  font-size: .63rem; letter-spacing: .1em; text-transform: uppercase;
+  font-weight: 600; padding: .3rem .85rem; cursor: pointer; transition: .2s;
+}
+.f-btn:hover  { border-color: #3a3f55; color: var(--text); }
+.f-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+/* ── TASK CARD ── */
+.task-list { display: flex; flex-direction: column; gap: .6rem; }
+
+.tc {
+  background: var(--card); border: 1px solid var(--border);
+  border-left: 4px solid var(--border);
+  border-radius: 12px; padding: .9rem 1rem;
+  display: grid; grid-template-columns: auto 1fr auto;
+  align-items: center; gap: .9rem; cursor: pointer;
+  transition: transform .15s, background .15s;
+  animation: pIn .3s ease both;
+}
+.tc:hover { transform: translateY(-1px); background: #1e2230; }
+.tc.diff-easy   { border-left-color: var(--green); }
+.tc.diff-medium { border-left-color: var(--yellow); }
+.tc.diff-hard   { border-left-color: var(--orange); }
+.tc.diff-urgent { border-left-color: var(--red); }
+.tc.done { opacity: .5; }
+.tc.done .tc-name { text-decoration: line-through; }
+
+.tc-check {
+  width: 21px; height: 21px; border: 2px solid var(--border);
+  border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; font-size: .72rem; transition: .2s;
+}
+.tc.done .tc-check { background: var(--green); border-color: var(--green); color: #fff; }
+
+.tc-name { font-size: .92rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tc-meta { display: flex; gap: .6rem; margin-top: .25rem; flex-wrap: wrap; }
+
+.chip {
+  font-size: .58rem; letter-spacing: .1em; text-transform: uppercase;
+  font-weight: 600; padding: .13rem .45rem; border-radius: 4px;
+}
+.ch-subj   { background:rgba(108,99,255,.15); color:#9b95ff; }
+.ch-easy   { background:rgba(34,211,160,.12);  color:var(--green); }
+.ch-medium { background:rgba(251,191,36,.12);  color:var(--yellow); }
+.ch-hard   { background:rgba(249,115,22,.12);  color:var(--orange); }
+.ch-urgent { background:rgba(239,68,68,.12);   color:var(--red); }
+.ch-due         { background:rgba(107,115,148,.15); color:var(--muted); }
+.ch-due.overdue { background:rgba(239,68,68,.12);   color:var(--red); }
+.ch-due.today   { background:rgba(251,191,36,.12);  color:var(--yellow); }
+
+.del-btn {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 6px; color: var(--muted); cursor: pointer;
+  font-size: .78rem; padding: .28rem .45rem; transition: .15s;
+}
+.del-btn:hover { color: var(--red); border-color: var(--red); }
+
+/* Urgent banner */
+.urg-banner {
+  background: rgba(239,68,68,.08); border: 1px solid rgba(239,68,68,.25);
+  border-radius: 12px; padding: .85rem 1.1rem;
+  margin-bottom: 1rem; display: none; align-items: center; gap: .8rem;
+  animation: pulse 2s infinite;
+}
+.urg-banner.on { display: flex; }
+.urg-title { font-size: .8rem; color: var(--red); font-weight: 600; }
+.urg-sub   { font-size: .67rem; color: rgba(239,68,68,.6); }
+@keyframes pulse { 0%,100%{border-color:rgba(239,68,68,.25)} 50%{border-color:rgba(239,68,68,.6)} }
+
+/* Empty */
+.empty { text-align: center; padding: 3.5rem 1rem; color: var(--muted); }
+.empty-icon { font-size: 2.5rem; margin-bottom: .7rem; }
+.empty h3   { color: var(--text); font-size: 1rem; margin-bottom: .3rem; }
+.empty p    { font-size: .7rem; }
+
+/* ── BOTTOM NAV ── */
+nav {
+  background: var(--surface); border-top: 1px solid var(--border);
+  display: flex; position: sticky; bottom: 0; z-index: 100;
+}
+.nav-btn {
+  flex: 1; background: none; border: none; color: var(--muted);
+  font-family: inherit; font-size: .68rem; font-weight: 600;
+  letter-spacing: .06em; padding: .9rem .5rem .8rem;
+  cursor: pointer; display: flex; flex-direction: column;
+  align-items: center; gap: .25rem; transition: color .2s; position: relative;
+}
+.nav-btn::before {
+  content: ''; position: absolute; top: 0; left: 20%; right: 20%;
+  height: 2px; background: var(--accent); border-radius: 0 0 4px 4px;
+  opacity: 0; transition: opacity .2s;
+}
+.nav-btn.active { color: var(--accent); }
+.nav-btn.active::before { opacity: 1; }
+.nav-btn:hover  { color: var(--text); }
+.nav-icon { font-size: 1.25rem; line-height: 1; }
+.nav-badge {
+  position: absolute; top: .45rem; right: calc(50% - 1.3rem);
+  background: var(--red); color: #fff; font-size: .52rem;
+  font-weight: 700; border-radius: 10px; padding: .1rem .3rem;
+  min-width: 14px; text-align: center; display: none;
+}
+.nav-badge.on { display: block; }
+
+@media (max-width:580px) {
+  .row { grid-template-columns: 1fr; }
+  .stats { grid-template-columns: repeat(2,1fr); }
+  .page { padding: 1rem; padding-bottom: 80px; }
+}
+</style>
+</head>
+<body>
+
+<div id="toasts"></div>
+
+<header>
+  <div class="logo">Study<span>Desk</span></div>
+  <div style="display:flex;align-items:center;gap:.9rem">
+    <span class="hdr-date" id="hdrDate"></span>
+    <button class="notif-btn" onclick="checkUrgent(true)" title="Notifications">
+      🔔<span class="notif-dot" id="notifDot"></span>
+    </button>
+  </div>
+</header>
+
+<div style="flex:1;display:flex;flex-direction:column">
+
+  <!-- PAGE 1: CREATE -->
+  <div class="page active" id="page-create">
+    <div class="page-eyebrow">✏️ Page 1 of 2</div>
+    <div class="page-title">Create New Task</div>
+    <div class="page-sub">Add an assignment with its difficulty level.</div>
+
+    <div class="form-card">
+      <div class="row">
+        <div class="fg full">
+          <label>Task Name *</label>
+          <input id="f-name" placeholder="e.g. Math Assignment – Ch.5"/>
+        </div>
+      </div>
+      <div class="row">
+        <div class="fg">
+          <label>Subject</label>
+          <select id="f-subj">
+            <option>Mathematics</option><option>Science</option>
+            <option>English</option><option>History</option>
+            <option>Computer</option><option>Art</option>
+            <option>Physical Education</option><option>Other</option>
+          </select>
+        </div>
+        <div class="fg">
+          <label>Due Date</label>
+          <input type="date" id="f-due"/>
+        </div>
+      </div>
+      <div class="row">
+        <div class="fg">
+          <label>Due Time (optional)</label>
+          <input type="time" id="f-time"/>
+        </div>
+        <div class="fg">
+          <label>Notes (optional)</label>
+          <input id="f-note" placeholder="e.g. Submit on Google Classroom"/>
+        </div>
+      </div>
+      <div class="fg">
+        <label>Difficulty Level *</label>
+        <div class="diff-row">
+          <button class="diff-btn easy active" data-d="easy"   onclick="pickDiff(this)"><span class="di">🟢</span>Easy</button>
+          <button class="diff-btn medium"      data-d="medium" onclick="pickDiff(this)"><span class="di">🟡</span>Medium</button>
+          <button class="diff-btn hard"        data-d="hard"   onclick="pickDiff(this)"><span class="di">🟠</span>Hard</button>
+          <button class="diff-btn urgent"      data-d="urgent" onclick="pickDiff(this)"><span class="di">🔴</span>Urgent</button>
+        </div>
+      </div>
+      <button class="btn-primary" onclick="createTask()">＋ Add Task</button>
+    </div>
+
+    <div class="sec-hdr">
+      <h3>Recently Added</h3>
+      <span class="badge" id="recentBadge">0</span>
+    </div>
+    <div class="task-list" id="recentList"></div>
+  </div>
+
+  <!-- PAGE 2: MONITOR -->
+  <div class="page" id="page-monitor">
+    <div class="page-eyebrow">📊 Page 2 of 2</div>
+    <div class="page-title">Track & Monitor</div>
+    <div class="page-sub">Monitor all tasks. Urgent tasks trigger notifications.</div>
+
+    <div class="urg-banner" id="urgBanner">
+      <span style="font-size:1.3rem">🚨</span>
+      <div>
+        <div class="urg-title" id="urgText">You have urgent tasks!</div>
+        <div class="urg-sub">These require immediate attention.</div>
+      </div>
+    </div>
+
+    <div class="stats">
+      <div class="stat s-total"><div class="stat-n" id="sTotal">0</div><div class="stat-l">Total</div></div>
+      <div class="stat s-done"> <div class="stat-n" id="sDone">0</div> <div class="stat-l">Done</div></div>
+      <div class="stat s-pend"> <div class="stat-n" id="sPend">0</div> <div class="stat-l">Pending</div></div>
+      <div class="stat s-over"> <div class="stat-n" id="sOver">0</div> <div class="stat-l">Overdue</div></div>
+    </div>
+
+    <div class="filters">
+      <button class="f-btn active" onclick="setFilter('all',this)">All</button>
+      <button class="f-btn" onclick="setFilter('pending',this)">Pending</button>
+      <button class="f-btn" onclick="setFilter('done',this)">Done</button>
+      <button class="f-btn" onclick="setFilter('urgent',this)">🔴 Urgent</button>
+      <button class="f-btn" onclick="setFilter('overdue',this)">⏰ Overdue</button>
+      <button class="f-btn" onclick="setFilter('today',this)">📅 Today</button>
+    </div>
+    <div class="task-list" id="monitorList"></div>
+  </div>
+
+</div>
+
+<nav>
+  <button class="nav-btn active" id="nav-create" onclick="goPage('create')">
+    <span class="nav-icon">✏️</span>Create Task
+  </button>
+  <button class="nav-btn" id="nav-monitor" onclick="goPage('monitor')">
+    <span class="nav-badge" id="navBadge"></span>
+    <span class="nav-icon">📊</span>Track & Monitor
+  </button>
+</nav>
+
+<script>
+// ── Helpers ──
+function today()      { return new Date().toISOString().split('T')[0]; }
+function addDays(n)   { const d=new Date(); d.setDate(d.getDate()+n); return d.toISOString().split('T')[0]; }
+function daysLeft(due){ return due ? Math.round((new Date(due)-new Date(today()))/86400000) : null; }
+function dueChip(due) {
+  const dl = daysLeft(due);
+  if (dl === null) return '';
+  const cls = dl < 0 ? 'overdue' : dl === 0 ? 'today' : '';
+  const txt = dl < 0 ? `${Math.abs(dl)}d overdue` : dl === 0 ? 'Due today' : dl === 1 ? 'Due tomorrow' : `Due in ${dl}d`;
+  return `<span class="chip ch-due ${cls}">${txt}</span>`;
+}
+
+// ── State ──
+let tasks = [
+  { id:1, name:'Math Homework – Ch.5',  subject:'Mathematics', due:today(),      time:'', note:'Pages 102–108',    diff:'hard',   done:false },
+  { id:2, name:'Science Lab Report',    subject:'Science',     due:today(),      time:'', note:'Include diagrams', diff:'urgent', done:false },
+  { id:3, name:'English Essay Draft',   subject:'English',     due:addDays(1),   time:'', note:'',                 diff:'medium', done:false },
+  { id:4, name:'History Quiz Revision', subject:'History',     due:addDays(2),   time:'', note:'Chapter 4',        diff:'easy',   done:true  },
+  { id:5, name:'Computer Project',      subject:'Computer',    due:addDays(-1),  time:'', note:'HTML portfolio',   diff:'hard',   done:false },
+];
+let nid = 6, selDiff = 'easy', filter = 'all', notified = new Set();
+
+// ── Date display ──
+const now = new Date();
+document.getElementById('hdrDate').textContent =
+  ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][now.getDay()] + ', ' +
+  now.getDate() + ' ' + ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][now.getMonth()] +
+  ' ' + now.getFullYear();
+document.getElementById('f-due').value = today();
+
+// ── Toast ──
+function toast(title, msg, type='info') {
+  const icons = {info:'💬', ok:'✅', warn:'⚠️', urgent:'🚨'};
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.innerHTML = `<span style="font-size:1.1rem;flex-shrink:0">${icons[type]||'💬'}</span>
+    <div class="toast-body"><div class="toast-title">${title}</div><div class="toast-msg">${msg}</div></div>
+    <button class="toast-x" onclick="rmToast(this)">✕</button>`;
+  document.getElementById('toasts').appendChild(el);
+  setTimeout(() => rmToast(el.querySelector('.toast-x')), 5000);
+}
+function rmToast(btn) {
+  const t = btn.closest ? btn.closest('.toast') : btn;
+  t.classList.add('out');
+  setTimeout(() => t.remove(), 250);
+}
+
+// ── Urgency ──
+function checkUrgent(manual=false) {
+  const urgent  = tasks.filter(t => !t.done && t.diff === 'urgent');
+  const overdue = tasks.filter(t => !t.done && t.due && daysLeft(t.due) < 0);
+  const count   = urgent.length + overdue.length;
+
+  document.getElementById('navBadge').textContent = count || '';
+  document.getElementById('navBadge').classList.toggle('on', count > 0);
+  document.getElementById('notifDot').classList.toggle('on', count > 0);
+
+  const banner = document.getElementById('urgBanner');
+  banner.classList.toggle('on', count > 0);
+  if (count) {
+    let parts = [];
+    if (urgent.length)  parts.push(`${urgent.length} urgent task(s)`);
+    if (overdue.length) parts.push(`${overdue.length} overdue task(s)`);
+    document.getElementById('urgText').textContent = parts.join(' · ');
+  }
+
+  if (manual) {
+    if (!count) { toast('All Clear!', 'No urgent or overdue tasks.', 'ok'); return; }
+    urgent.slice(0,2).forEach(t  => toast('🔴 Urgent!',  `"${t.name}" is marked urgent.`,     'urgent'));
+    overdue.slice(0,2).forEach(t => toast('⏰ Overdue!', `"${t.name}" is past its deadline.`, 'warn'));
+    const todayTasks = tasks.filter(t => !t.done && t.due === today());
+    if (todayTasks.length) toast('📅 Due Today', `${todayTasks.length} task(s) due today.`, 'info');
+  } else {
+    [...urgent, ...overdue].forEach(t => {
+      if (!notified.has(t.id)) {
+        notified.add(t.id);
+        toast(daysLeft(t.due) < 0 ? '⏰ Overdue!' : '🔴 Urgent!', `"${t.name}" needs attention.`, daysLeft(t.due) < 0 ? 'warn' : 'urgent');
+      }
+    });
+  }
+}
+
+// ── Difficulty ──
+function pickDiff(btn) {
+  document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  selDiff = btn.dataset.d;
+}
+
+// ── Create task ──
+function createTask() {
+  const name = document.getElementById('f-name').value.trim();
+  if (!name) {
+    document.getElementById('f-name').style.borderColor = 'var(--red)';
+    toast('Missing Info', 'Please enter a task name.', 'warn');
+    setTimeout(() => document.getElementById('f-name').style.borderColor = '', 1500);
+    return;
+  }
+  const t = {
+    id: nid++, name,
+    subject: document.getElementById('f-subj').value,
+    due:     document.getElementById('f-due').value,
+    time:    document.getElementById('f-time').value,
+    note:    document.getElementById('f-note').value.trim(),
+    diff:    selDiff, done: false
+  };
+  tasks.unshift(t);
+  ['f-name','f-note','f-time'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('f-due').value = today();
+  toast('Task Added!', `"${t.name}" created.`, 'ok');
+  if (t.diff === 'urgent') setTimeout(() => toast('🔴 Urgent!', `"${t.name}" is urgent!`, 'urgent'), 600);
+  notified.delete(t.id);
+  render(); checkUrgent();
+}
+
+// ── Toggle / Delete ──
+function toggleDone(id) {
+  const t = tasks.find(t => t.id === id);
+  if (!t) return;
+  t.done = !t.done;
+  if (t.done) toast('✅ Done!', `"${t.name}" marked complete.`, 'ok');
+  render(); checkUrgent();
+}
+function deleteTask(id) {
+  tasks = tasks.filter(t => t.id !== id);
+  render(); checkUrgent();
+}
+
+// ── Filter ──
+function setFilter(f, btn) {
+  filter = f;
+  document.querySelectorAll('.f-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderMonitor();
+}
+
+// ── Page switch ──
+function goPage(p) {
+  document.querySelectorAll('.page').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
+  document.getElementById('page-'+p).classList.add('active');
+  document.getElementById('nav-'+p).classList.add('active');
+  render();
+}
+
+// ── Card HTML ──
+function cardHTML(t) {
+  const dlabels = {easy:'Easy', medium:'Medium', hard:'Hard', urgent:'URGENT'};
+  return `<div class="tc diff-${t.diff} ${t.done?'done':''}" onclick="toggleDone(${t.id})">
+    <div class="tc-check">${t.done?'✓':''}</div>
+    <div>
+      <div class="tc-name">${t.name}</div>
+      <div class="tc-meta">
+        <span class="chip ch-subj">${t.subject}</span>
+        <span class="chip ch-${t.diff}">${dlabels[t.diff]}</span>
+        ${dueChip(t.due)}
+        ${t.note ? `<span class="chip ch-subj" style="color:var(--muted)">${t.note}</span>` : ''}
+      </div>
+    </div>
+    <button class="del-btn" onclick="event.stopPropagation();deleteTask(${t.id})">🗑</button>
+  </div>`;
+}
+
+// ── Render ──
+function renderRecent() {
+  document.getElementById('recentBadge').textContent = tasks.length;
+  const el = document.getElementById('recentList');
+  const list = tasks.slice(0, 4);
+  el.innerHTML = list.length
+    ? list.map(cardHTML).join('')
+    : `<div class="empty"><div class="empty-icon">📝</div><h3>No tasks yet</h3><p>Add your first task above.</p></div>`;
+}
+
+function renderMonitor() {
+  const filtered = tasks.filter(t =>
+    filter === 'pending' ? !t.done :
+    filter === 'done'    ? t.done :
+    filter === 'urgent'  ? t.diff === 'urgent' && !t.done :
+    filter === 'overdue' ? !t.done && t.due && daysLeft(t.due) < 0 :
+    filter === 'today'   ? t.due === today() : true
+  );
+  document.getElementById('sTotal').textContent = tasks.length;
+  document.getElementById('sDone').textContent  = tasks.filter(t => t.done).length;
+  document.getElementById('sPend').textContent  = tasks.filter(t => !t.done).length;
+  document.getElementById('sOver').textContent  = tasks.filter(t => !t.done && t.due && daysLeft(t.due) < 0).length;
+
+  const el = document.getElementById('monitorList');
+  el.innerHTML = filtered.length
+    ? filtered.map(cardHTML).join('')
+    : `<div class="empty"><div class="empty-icon">🎉</div><h3>Nothing here</h3><p>Try a different filter.</p></div>`;
+}
+
+function render() { renderRecent(); renderMonitor(); }
+
+// ── Init ──
+render();
+setTimeout(() => checkUrgent(), 800);
+setInterval(() => checkUrgent(), 30000);
+</script>
+</body>
+</html>
