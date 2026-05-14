@@ -416,15 +416,13 @@ function dueChip(due) {
 }
 
 // ── State ──
-let tasks = [
-  { id:1, name:'Math Homework – Ch.5',  subject:'Mathematics', due:today(),      time:'', note:'Pages 102–108',    diff:'hard',   done:false },
-  { id:2, name:'Science Lab Report',    subject:'Science',     due:today(),      time:'', note:'Include diagrams', diff:'urgent', done:false },
-  { id:3, name:'English Essay Draft',   subject:'English',     due:addDays(1),   time:'', note:'',                 diff:'medium', done:false },
-  { id:4, name:'History Quiz Revision', subject:'History',     due:addDays(2),   time:'', note:'Chapter 4',        diff:'easy',   done:true  },
-  { id:5, name:'Computer Project',      subject:'Computer',    due:addDays(-1),  time:'', note:'HTML portfolio',   diff:'hard',   done:false },
-];
-let nid = 6, selDiff = 'easy', filter = 'all', notified = new Set();
+let tasks = [];
 
+let nid = 1,
+    selDiff = 'easy',
+    filter = 'all',
+    notified = new Set();
+  
 // ── Date display ──
 const now = new Date();
 document.getElementById('hdrDate').textContent =
